@@ -49,7 +49,7 @@ export default function KanbanBoard() {
     if (!content) return;
 
     const newColumns = { ...columns };
-    newColumns[colId].items.push({ id: uuidv4(), content });
+    newColumns[colId as keyof typeof newColumns].items.push({ id: uuidv4(), content });
     saveAndSync(newColumns);
   };
 
