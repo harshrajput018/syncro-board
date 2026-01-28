@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { io } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
+import { Plus } from 'lucide-react';
 
 const socket = io();
 
@@ -9,11 +10,12 @@ export default function Home() {
   const [columns, setColumns] = useState<any>(null);
 
   useEffect(() => {
-    // Sync logic for Incognito/New tabs
+    // 1. Initial fetch for Incognito/New tabs
     fetch("/api/get-board")
       .then((res) => res.json())
       .then((data) => setColumns(data));
 
+    // 2. Real-time listener
     socket.on("board-updated", (newColumns) => {
       setColumns(newColumns);
     });
@@ -26,37 +28,42 @@ export default function Home() {
     socket.emit("update-board", newCols);
   };
 
-  if (!columns) return <div className="min-h-screen bg-black text-white p-10">Loading Board...</div>;
+  if (!columns) return <div className="min-h-screen bg-[#020617] text-white p-10 font-sans">Syncing...</div>;
 
   return (
-    <main className="min-h-screen bg-black text-white p-10">
-      <h1 className="text-3xl font-bold mb-8">Syncro Board</h1>
+    <div className="min-h-screen bg-[#020617] text-[#94a3b8] font-sans p-8">
+      <div className="flex items-center gap-3 mb-12 border-b border-gray-800 pb-6">
+        <div className="bg-blue-600 p-1 rounded">
+          <div className="w-5 h-5 border-2 border-white"></div>
+        </div>
+        <h1 className="text-xl font-bold tracking-tight text-white">SYNCROBOARD <span className="text-gray-500 font-normal ml-2">V2.0</span></h1>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {Object.entries(columns).map(([colId, col]: any) => (
-          <div key={colId} className="bg-[#1a1a1a] border border-gray-800 p-6 rounded-lg min-h-[200px]">
-            <h2 className="text-xl font-semibold mb-4 text-gray-300">{col.title}</h2>
+          <div key={colId} className="bg-[#0b1120] border border-gray-800 rounded-xl p-6 min-h-[500px]">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400">{col.title}</h2>
+              <button 
+                onClick={() => {
+                   const content = prompt("Enter Task:");
+                   if (!content) return;
+                   const newCols = { ...columns };
+                   newCols[colId].items.push({ id: uuidv4(), content });
+                   saveAndSync(newCols);
+                }}
+                className="hover:text-white transition-colors"><Plus size={18} /></button>
+            </div>
             <div className="space-y-3">
               {col.items.map((item: any) => (
-                <div key={item.id} className="bg-[#262626] p-4 rounded-md border border-gray-700 shadow-sm">
+                <div key={item.id} className="bg-[#1e293b] border border-gray-700 p-4 rounded-lg text-gray-200 shadow-sm">
                   {item.content}
                 </div>
               ))}
             </div>
-            <button 
-              onClick={() => {
-                const content = prompt("Enter task name:");
-                if (!content) return;
-                const newCols = { ...columns };
-                newCols[colId as keyof typeof columns].items.push({ id: uuidv4(), content });
-                saveAndSync(newCols);
-              }}
-              className="mt-6 text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
-            >
-              + Add Task
-            </button>
           </div>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
